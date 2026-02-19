@@ -27,6 +27,12 @@ class MyPlugin(Star):
         user_id = event.get_sender_id()
         user_name = event.get_sender_name()
         
+        # 忽略机器人自己发送的消息，避免无限循环
+        bot_id = event.self_id
+        if user_id == bot_id:
+            logger.info(f"[复读插件] 忽略机器人自己的消息")
+            return
+        
         # 获取消息历史
         history = self.message_history[session_id]
         
