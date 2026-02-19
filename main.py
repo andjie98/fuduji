@@ -14,7 +14,7 @@ class MyPlugin(Star):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
 
     @filter.event_message_type(filter.EventMessageType.GROUP_MESSAGE)
-    async def message_repeater(self, event: AstrMessageEvent):
+    async def message_repeater(self, event: AstrMessageEvent, *args, **kwargs):
         """复读功能：当超过2个玩家说相同的话时，机器人也说一句"""
         message_str = event.message_str.strip()
         
