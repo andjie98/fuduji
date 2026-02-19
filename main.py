@@ -1,24 +1,54 @@
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
+from collections import defaultdict, deque
+import asyncio
 
-@register("helloworld", "YourName", "一个简单的 Hello World 插件", "1.0.0")
+@register("fuduji", "andjie98", "复读功能插件", "1.0.0")
 class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
+        self.message_history = defaultdict(deque)  # 用于存储每个群组/频道的消息历史
+        self.max_history = 10  # 最多记录最近10条消息
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
 
-    # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
-    @filter.command("helloworld")
-    async def helloworld(self, event: AstrMessageEvent):
-        """这是一个 hello world 指令""" # 这是 handler 的描述，将会被解析方便用户了解插件内容。建议填写。
-        user_name = event.get_sender_name()
-        message_str = event.message_str # 用户发的纯文本消息字符串
-        message_chain = event.get_messages() # 用户所发的消息的消息链 # from astrbot.api.message_components import *
-        logger.info(message_chain)
-        yield event.plain_result(f"Hello, {user_name}, 你发了 {message_str}!") # 发送一条纯文本消息
+    @filter.on_always()
+    async def message_repeater(self, event: AstrMessageEvent):
+        """复读功能：当超过2个玩家说相同的话时，机器人也说一句"""
+        message_str = event.message_str.strip()
+        
+        # 忽略空消息和命令
+        if not message_str or message_str.startswith('/'):
+            return
+        
+        # 获取会话ID（群组ID或私聊ID）
+        session_id = event.session_id
+        
+        # 获取消息历史
+        history = self.message_history[session_id]
+        
+        # 统计相同消息的数量（需要来自不同用户）
+        message_count = defaultdict(set)
+        for msg in history:
+            message_count[msg['content']].add(msg['user_id'])
+        
+        # 检查当前消息是否已经出现过
+        if message_str in message_count and len(message_count[message_str]) >= 2:
+            yield event.plain_result(message_str)
+        
+        # 将当前消息添加到历史记录
+        history.append({
+            'content': message_str,
+            'user_id': event.get_sender_id(),
+            'user_name': event.get_sender_name()
+        })
+        
+        # 保持历史记录在最大限制内
+        if len(history) > self.max_history:
+            history.popleft()
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+        self.message_history.clear()
