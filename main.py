@@ -38,10 +38,17 @@ class MyPlugin(Star):
         for msg in history:
             message_count[msg['content']].add(msg['user_id'])
         
-        # 检查当前消息是否已经出现过
+        # 检查当前消息是否已经出现过，并包括当前用户
         if message_str in message_count:
-            logger.info(f"[复读插件] 消息已出现过，说过的人数: {len(message_count[message_str])}")
-            if len(message_count[message_str]) >= 2:
+            # 包括当前用户在内的总人数
+            total_users = len(message_count[message_str])
+            # 如果当前用户不在历史中，说明是新用户说了这句话
+            if user_id not in message_count[message_str]:
+                total_users += 1
+            
+            logger.info(f"[复读插件] 消息已出现过，历史中说过的用户数: {len(message_count[message_str])}, 包括当前用户: {total_users}")
+            
+            if total_users >= 2:
                 logger.info(f"[复读插件] 触发复读！")
                 yield event.plain_result(message_str)
             else:
