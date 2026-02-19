@@ -1,6 +1,7 @@
-from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult, EventMessageType
+from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
+from astrbot.api.all import *
 from collections import defaultdict, deque
 
 @register("fuduji", "andjie98", "复读功能插件", "1.0.0")
@@ -13,7 +14,7 @@ class MyPlugin(Star):
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
 
-    @filter.event_message_type(EventMessageType.GROUP_MESSAGE)
+    @event_message_type(EventMessageType.GROUP_MESSAGE)
     async def message_repeater(self, event: AstrMessageEvent):
         """复读功能：当超过2个玩家说相同的话时，机器人也说一句"""
         message_str = event.message_str.strip()
