@@ -25,9 +25,13 @@ class MyPlugin(Star):
         
         # 获取会话ID（群组ID或私聊ID）
         session_id = event.session_id
+        user_id = event.get_sender_id()
+        user_name = event.get_sender_name()
         
         # 获取消息历史
         history = self.message_history[session_id]
+        
+        logger.info(f"[复读插件] 收到消息: {message_str}, 发送者: {user_name}({user_id}), 当前历史数量: {len(history)}")
         
         # 统计相同消息的数量（需要来自不同用户）
         message_count = defaultdict(set)
@@ -35,15 +39,22 @@ class MyPlugin(Star):
             message_count[msg['content']].add(msg['user_id'])
         
         # 检查当前消息是否已经出现过
-        if message_str in message_count and len(message_count[message_str]) >= 2:
-            yield event.plain_result(message_str)
+        if message_str in message_count:
+            logger.info(f"[复读插件] 消息已出现过，说过的人数: {len(message_count[message_str])}")
+            if len(message_count[message_str]) >= 2:
+                logger.info(f"[复读插件] 触发复读！")
+                yield event.plain_result(message_str)
+            else:
+                logger.info(f"[复读插件] 人数不足，不复读")
         
         # 将当前消息添加到历史记录
         history.append({
             'content': message_str,
-            'user_id': event.get_sender_id(),
-            'user_name': event.get_sender_name()
+            'user_id': user_id,
+            'user_name': user_name
         })
+        
+        logger.info(f"[复读插件] 已添加到历史，历史数量: {len(history)}")
         
         # 保持历史记录在最大限制内
         if len(history) > self.max_history:
